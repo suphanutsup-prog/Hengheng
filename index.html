@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ranking Board</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f0f7f0;
+  --bg2: #ffffff;
+  --bg3: #e3ede3;
+  --border: #c8ddc8;
+  --text: #1a2e1a;
+  --muted: #5a7a5a;
+  --dim: #9ab89a;
+  --accent: #3a8a4a;
+  --accent2: #5aaa6a;
+  --accent3: #2e7a8a;
+  --red: #c0392b;
+  --font: 'IBM Plex Sans Thai', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; min-height: 100vh; }
+
+header { border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.logo { font-family: var(--mono); font-size: 15px; color: var(--muted); letter-spacing: 0.1em; font-weight:600; }
+.logo span { color: var(--accent); }
+.config-row { display: flex; gap: 8px; align-items: center; flex: 1; min-width: 280px; }
+.config-row input { flex: 1; background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 7px 12px; border-radius: 6px; font-family: var(--mono); font-size: 12px; min-width: 0; }
+.config-row input::placeholder { color: var(--dim); }
+.config-row input:focus { outline: none; border-color: var(--accent); }
+.btn { padding: 7px 16px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); cursor: pointer; font-family: var(--font); font-size: 13px; white-space: nowrap; transition: all 0.15s; }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+.btn-accent:hover { background: var(--accent2); color: #fff; }
+
+.status-bar { padding: 8px 24px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; font-size: 12px; color: var(--muted); }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--dim); display: inline-block; margin-right: 6px; }
+.dot.ok { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); }
+.dot.err { background: var(--red); }
+.dot.loading { background: var(--accent); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 24px; background: var(--bg); position: sticky; top: 0; z-index: 10; }
+.tab { padding: 12px 20px; font-size: 13px; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; white-space: nowrap; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+
+.content { padding: 24px; max-width: 1100px; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 28px; }
+.stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.stat-label { font-size: 11px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+.stat-val { font-family: var(--mono); font-size: 24px; font-weight: 500; color: var(--accent); }
+
+.rank-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 640px) { .rank-grid { grid-template-columns: 1fr; } }
+
+.rank-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.rank-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.rank-title { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.rank-count { font-family: var(--mono); font-size: 11px; color: var(--dim); }
+
+.rank-row { display: flex; align-items: center; gap: 12px; padding: 9px 16px; border-bottom: 1px solid var(--border); transition: background 0.1s; }
+.rank-row:last-child { border-bottom: none; }
+.rank-row:hover { background: var(--bg3); }
+.rank-pos { font-family: var(--mono); font-size: 11px; color: var(--dim); width: 18px; flex-shrink: 0; }
+.rank-pos.top { color: var(--accent); font-weight: 500; }
+.rank-num { font-family: var(--mono); font-size: 18px; font-weight: 500; min-width: 48px; color: var(--text); }
+.rank-bar-wrap { flex: 1; position: relative; height: 4px; background: var(--bg3); border-radius: 2px; }
+.rank-bar { height: 4px; border-radius: 2px; background: var(--accent); transition: width 0.5s ease; }
+.rank-val { font-family: var(--mono); font-size: 12px; color: var(--muted); min-width: 70px; text-align: right; }
+
+.person-table { width: 100%; border-collapse: collapse; }
+.person-table th { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); background: var(--bg2); }
+.person-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.person-table tr:hover td { background: var(--bg3); }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-family: var(--mono); font-size: 10px; font-weight: 500; letter-spacing: 0.05em; }
+.badge-N { background: #c8e6c9; color: #1b5e20; }
+.badge-E { background: #b2dfdb; color: #00695c; }
+.badge-P { background: #dcedc8; color: #33691e; }
+.num-val { font-family: var(--mono); }
+.total-row td { color: var(--accent); font-weight: 500; border-top: 1px solid var(--border); }
+
+.winner-form { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 24px; display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.form-input { background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 6px; font-family: var(--mono); font-size: 16px; width: 100px; letter-spacing: 0.1em; }
+.form-input:focus { outline: none; border-color: var(--accent); }
+
+.winner-section { margin-bottom: 20px; }
+.winner-title { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.winner-count { background: var(--accent); color: #000; font-family: var(--mono); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; }
+.winner-table { width: 100%; border-collapse: collapse; }
+.winner-table th { font-size: 11px; color: var(--dim); padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+.winner-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.winner-table tr:hover td { background: var(--bg3); }
+.win-num { font-family: var(--mono); font-size: 18px; color: var(--accent); font-weight: 500; }
+
+.empty-state { padding: 40px 16px; text-align: center; color: var(--dim); font-size: 13px; }
+.refresh-btn { font-family: var(--mono); font-size: 11px; color: var(--muted); background: none; border: 1px solid var(--border); padding: 4px 10px; border-radius: 4px; cursor: pointer; }
+.refresh-btn:hover { color: var(--accent); border-color: var(--accent); }
+.section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.section-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+.help { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 24px; font-size: 13px; line-height: 1.8; color: var(--muted); }
+.help strong { color: var(--text); }
+.help code { font-family: var(--mono); background: var(--bg3); padding: 2px 6px; border-radius: 3px; font-size: 12px; color: var(--accent); }
+.help ol { padding-left: 20px; margin-top: 8px; }
+.help li { margin-bottom: 6px; }
+
+.page { display: none; }
+.page.active { display: block; }
+
+/* ===== PRINT STYLES ===== */
+.print-card { background:#fff; color:#000; padding:16px; margin-bottom:24px; border:1px solid #ddd; border-radius:6px; font-family:'IBM Plex Sans Thai',sans-serif; font-size:12px; }
+table.pt { width:100%; border-collapse:collapse; font-size:12px; }
+table.pt th, table.pt td { border:1px solid #ccc; padding:4px 6px; }
+table.pt tfoot td { background:#f5f5f5; }
+@media print {
+  header, .status-bar, .tabs, #page-print > div:first-child, #half-pay-controls { display:none !important; }
+  .page { display:block !important; }
+  #page-ranking, #page-summary, #page-winner, #page-layoff, #page-entry, #page-setup { display:none !important; }
+  .print-card { border:none; margin:0; padding:8px; font-size:14px; }
+  .print-card table.pt { font-size:14px; }
+  .print-card table.pt th, .print-card table.pt td { padding:6px 10px; }
+  .print-card > div { font-size:18px; margin-bottom:10px; }
+  body { background:#fff; font-family: 'Sarabun', 'IBM Plex Sans Thai', sans-serif; }
+}
+.print-card { font-family: 'IBM Plex Sans Thai', sans-serif; }
+.print-card table.pt { font-size:13px; }
+.print-card table.pt th, .print-card table.pt td { padding:5px 8px; }
+</style>
+</head>
+<body>
+
+<header style="background:linear-gradient(135deg, #f0f7f0 0%, #e8f5e8 50%, #f0f7f0 100%);position:relative;overflow:hidden">
+  <div style="position:absolute;top:0;left:0;right:0;bottom:0;opacity:0.04;font-size:48px;display:flex;align-items:center;justify-content:space-around;pointer-events:none;letter-spacing:8px">🀄🎴🃏🎲🀄🎴🃏🎲</div>
+  <div class="logo" style="display:flex;align-items:center;gap:8px;position:relative">
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <text x="0" y="26" font-size="28">🐉</text>
+    </svg>
+    HENG<span>HENG</span>
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <text x="0" y="26" font-size="28" transform="scale(-1,1) translate(-32,0)">🐉</text>
+    </svg>
+    <span style="font-size:11px;color:var(--accent2);margin-left:4px;letter-spacing:0.15em">幸運</span>
+  </div>
+  <div class="config-row">
+    <input type="text" id="sheet-id" placeholder="Apps Script URL (วางตรงนี้)" />
+    <button class="btn btn-accent" onclick="loadData()">โหลด</button>
+    <button class="btn" onclick="autoRefresh()">↻ Auto</button>
+  </div>
+</header>
+
+<div class="status-bar">
+  <span><span class="dot" id="status-dot"></span><span id="status-text">ยังไม่ได้เชื่อมต่อ</span></span>
+  <span id="last-update"></span>
+  <span id="row-count"></span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showPage('ranking')">Ranking</div>
+  <div class="tab" onclick="showPage('summary')">สรุปยอด</div>
+  <div class="tab" onclick="showPage('winner')">ใครถูก</div>
+  <div class="tab" onclick="showPage('print')">ปริ้น</div>
+  <div class="tab" onclick="showPage('result')">สรุปผล</div>
+  <div class="tab" onclick="showPage('setup')">วิธีตั้งค่า</div>
+</div>
+
+<div class="content">
+
+  <div class="page active" id="page-ranking">
+    <div class="stat-grid" id="stat-cards"></div>
+    <div class="rank-grid" id="rank-panels"></div>
+  </div>
+
+  <div class="page" id="page-summary">
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap">
+      <select id="person-select" onchange="renderSummary()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-family:var(--font);font-size:13px;min-width:160px">
+        <option value="">— เลือกชื่อ —</option>
+      </select>
+      <select id="summary-sort" onchange="renderSummary()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-family:var(--font);font-size:13px">
+        <option value="num">เรียงตามเลข</option>
+        <option value="total">ยอดรวม</option>
+        <option value="bon">บน</option>
+        <option value="lang">ล่าง</option>
+        <option value="toad">โต๊ด</option>
+      </select>
+      <div id="summary-total" style="font-family:var(--mono);font-size:13px;color:var(--muted)"></div>
+    </div>
+    <div id="summary-content"></div>
+  </div>
+
+  <div class="page" id="page-winner">
+    <div class="winner-form" style="flex-direction:column;align-items:flex-start;gap:20px">
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end">
+        <div class="form-group">
+          <div class="form-label">2 ตัวบน</div>
+          <input class="form-input" id="w2b" maxlength="2" placeholder="86" />
+        </div>
+        <div class="form-group">
+          <div class="form-label">2 ตัวล่าง</div>
+          <input class="form-input" id="w2l" maxlength="2" placeholder="39" />
+        </div>
+      </div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end">
+        <div class="form-group">
+          <div class="form-label">3 ตัวบน <span style="color:var(--dim);font-size:10px;margin-left:4px">→ โต๊ดอัตโนมัติ</span></div>
+          <input class="form-input" id="w3b" maxlength="3" placeholder="725" oninput="previewToad()" />
+        </div>
+        <div style="align-self:flex-end;padding-bottom:8px;font-family:var(--mono);font-size:11px;color:var(--muted);min-width:200px" id="toad-preview"></div>
+      </div>
+      <div class="form-group">
+        <div class="form-label">3 ตัวล่าง <span style="color:var(--dim);font-size:10px;margin-left:4px">(4 เลข)</span></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input class="form-input" id="w3l1" maxlength="3" placeholder="162" />
+          <input class="form-input" id="w3l2" maxlength="3" placeholder="261" />
+          <input class="form-input" id="w3l3" maxlength="3" placeholder="612" />
+          <input class="form-input" id="w3l4" maxlength="3" placeholder="621" />
+        </div>
+      </div>
+      <button class="btn btn-accent" onclick="findWinners()">ค้นหา</button>
+    </div>
+    <div id="winner-out"></div>
+  </div>
+
+  <div class="page" id="page-print">
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap">
+      <select id="print-select" onchange="renderPrintPage()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-family:var(--font);font-size:13px;min-width:200px">
+        <option value="">— เลือกชื่อ —</option>
+      </select>
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)">
+        <span>หัก</span>
+        <input id="print-pct" type="number" value="28" min="0" max="100" step="0.5"
+          style="width:64px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px;font-family:var(--mono);font-size:13px;text-align:center"
+          oninput="renderPrintPage()" />
+        <span>%</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)">
+        <span>3บน×</span>
+        <input id="rate-3b" type="number" value="500" min="0" style="width:64px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px;font-family:var(--mono);font-size:13px;text-align:center" oninput="renderPrintPage()" />
+        <span>3โต๊ด×</span>
+        <input id="rate-3t" type="number" value="125" min="0" style="width:64px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px;font-family:var(--mono);font-size:13px;text-align:center" oninput="renderPrintPage()" />
+        <span>3ล่าง×</span>
+        <input id="rate-3l" type="number" value="100" min="0" style="width:64px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:6px;font-family:var(--mono);font-size:13px;text-align:center" oninput="renderPrintPage()" />
+      </div>
+      <button class="btn btn-accent" onclick="window.print()">🖨 Print</button>
+    </div>
+    <div id="half-pay-controls" style="display:flex;gap:8px;align-items:center;margin-bottom:20px;flex-wrap:wrap;padding:12px 16px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">
+      <span style="font-size:12px;color:var(--muted);margin-right:4px">จ่ายครึ่ง (กรอกยอดที่จ่าย½)</span>
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">
+        <span>2บน</span>
+        <input id="half-2b" type="number" min="0" placeholder="0" style="width:72px;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-family:var(--mono);font-size:13px;text-align:center" oninput="renderPrintPage()" />
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">
+        <span>2ล่าง</span>
+        <input id="half-2l" type="number" min="0" placeholder="0" style="width:72px;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-family:var(--mono);font-size:13px;text-align:center" oninput="renderPrintPage()" />
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">
+        <span>3บน</span>
+        <input id="half-3b" type="number" min="0" placeholder="0" style="width:72px;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-family:var(--mono);font-size:13px;text-align:center" oninput="renderPrintPage()" />
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">
+        <span>3ล่าง</span>
+        <input id="half-3l" type="number" min="0" placeholder="0" style="width:72px;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-family:var(--mono);font-size:13px;text-align:center" oninput="renderPrintPage()" />
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)">
+        <span>3โต๊ด</span>
+        <input id="half-3t" type="number" min="0" placeholder="0" style="width:72px;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-family:var(--mono);font-size:13px;text-align:center" oninput="renderPrintPage()" />
+      </div>
+    </div>
+    <div id="print-content"></div>
+  </div>
+
+  <div class="page" id="page-result">
+    <div class="stat-grid" id="result-stat-cards" style="margin-bottom:24px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" id="result-grid"></div>
+  </div>
+
+  <div class="page" id="page-setup">
+    <div class="help">
+      <strong>วิธีเชื่อม Google Sheets (ทำครั้งเดียว)</strong>
+      <ol>
+        <li>เปิด Google Sheets → เมนู <strong>Extensions → Apps Script</strong></li>
+        <li>ลบโค้ดเดิมออก แล้ววางโค้ดนี้แทน:<br>
+          <code style="display:block;margin-top:6px;padding:8px;background:var(--bg);border-radius:4px;font-size:11px;white-space:pre-wrap">function doGet(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = ['Nampu','Earth','Pooh'];
+  const result = [];
+  sheets.forEach(sName => {
+    const s = ss.getSheetByName(sName);
+    if (!s) return;
+    s.getDataRange().getValues().forEach((row,i) => {
+      if (i===0) return;
+      const num = row[0]?.toString().trim();
+      const bon = parseFloat(row[1])||0;
+      const lang = parseFloat(row[2])||0;
+      const toad = parseFloat(row[3])||0;
+      const name = row[4]?.toString().trim();
+      if (!num||(!bon&&!lang&&!toad)||isNaN(parseInt(num))) return;
+      result.push({sheet:sName[0],num,bon,lang,toad,name:name||'?',total:bon+lang+toad});
+    });
+  });
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}</code>
+        </li>
+        <li>กด <strong>Deploy → New deployment</strong></li>
+        <li>Type: <strong>Web app</strong> → Execute as: <strong>Me</strong> → Who has access: <strong>Anyone</strong></li>
+        <li>กด <strong>Deploy</strong> → Copy URL ที่ได้</li>
+        <li>วาง URL ในช่องด้านบน แล้วกด <strong>โหลด</strong></li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let allData = [];
+let rankShowMore = {};
+let autoTimer = null;
+let isAuto = false;
+
+const SHEETS = ['Nampu','Earth','Pooh'];
+
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  event.target.classList.add('active');
+  if (p==='ranking') renderRanking();
+  if (p==='summary') { populatePersonSelect(); renderSummary(); }
+  if (p==='print') renderPrintPage();
+  if (p==='result') renderResultPage();
+}
+
+function setStatus(state, text) {
+  const dot = document.getElementById('status-dot');
+  dot.className = 'dot ' + state;
+  document.getElementById('status-text').textContent = text;
+}
+
+function getSheetId() { return document.getElementById('sheet-id').value.trim(); }
+
+let customerRates = [];
+
+function getCustomerRate(baseName) {
+  // Find exact match first, then 'others'
+  const match = customerRates.find(c => c.name === baseName);
+  if (match) return match;
+  const others = customerRates.find(c => c.name === 'others');
+  return others || { pct:28, r2b:70, r2l:70, r3b:500, r3l:120, r3t:100 };
+}
+
+async function loadData() {
+  const url = document.getElementById('sheet-id').value.trim();
+  if (!url) { setStatus('err', 'กรุณาใส่ Apps Script URL ก่อน'); return; }
+  setStatus('loading', 'กำลังโหลด...');
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    // Support both old format (array) and new format {data, customers}
+    if (Array.isArray(json)) {
+      allData = json;
+      customerRates = [];
+    } else {
+      allData = json.data || [];
+      customerRates = json.customers || [];
+    }
+    const now = new Date().toLocaleTimeString('th-TH');
+    setStatus('ok', 'เชื่อมต่อแล้ว');
+    document.getElementById('last-update').textContent = 'อัปเดต ' + now;
+    const layoffCount = allData.filter(e => isLayoff(e.name, e)).length;
+    document.getElementById('row-count').textContent = allData.length.toLocaleString() + ' รายการ' + (layoffCount ? ` (ออกตัว ${layoffCount})` : '');
+    renderAll();
+  } catch(e) {
+    console.error('Load error:', e);
+    setStatus('err', 'โหลดไม่ได้ — ' + (e.message || 'ตรวจสอบ URL'));
+  }
+}
+
+function autoRefresh() {
+  isAuto = !isAuto;
+  const btn = event.target;
+  if (isAuto) {
+    btn.style.color = 'var(--accent)';
+    btn.style.borderColor = 'var(--accent)';
+    loadData();
+    autoTimer = setInterval(loadData, 15000);
+  } else {
+    btn.style.color = '';
+    btn.style.borderColor = '';
+    clearInterval(autoTimer);
+  }
+}
+
+function getTopNums(field, digits, n=25) {
+  const recv = {}, layoff = {};
+  allData.forEach(e => {
+    if (e.num.length !== digits || !e[field]) return;
+    if (isLayoff(e.name, e)) {
+      layoff[e.num] = (layoff[e.num]||0) + Math.abs(e[field]);
+    } else {
+      recv[e.num] = (recv[e.num]||0) + e[field];
+    }
+  });
+  const nums = [...new Set([...Object.keys(recv), ...Object.keys(layoff)])];
+  return nums
+    .map(num => {
+      const r = recv[num]||0;
+      const l = layoff[num]||0;
+      return { num, recv: r, layoff: l, net: r - l };
+    })
+    .filter(d => d.recv > 0)
+    .sort((a,b) => b.net - a.net)
+    .slice(0, n);
+}
+
+function renderAll() {
+  renderStats();
+  renderRanking();
+  populatePersonSelect();
+  populatePrintSelect();
+  renderSummary();
+}
+
+function renderStats() {
+  const total = allData.reduce((s,e)=>s+e.total,0);
+  const bon2 = allData.filter(e=>e.num.length===2).reduce((s,e)=>s+e.bon,0);
+  const lang2 = allData.filter(e=>e.num.length===2).reduce((s,e)=>s+e.lang,0);
+  const bon3 = allData.filter(e=>e.num.length===3).reduce((s,e)=>s+e.bon,0);
+  const lang3 = allData.filter(e=>e.num.length===3).reduce((s,e)=>s+e.lang,0);
+  const toad3 = allData.filter(e=>e.num.length===3).reduce((s,e)=>s+e.toad,0);
+  document.getElementById('stat-cards').innerHTML = [
+    ['ยอดรวม', total.toLocaleString()],
+    ['2 ตัวบน', bon2.toLocaleString()],
+    ['2 ตัวล่าง', lang2.toLocaleString()],
+    ['3 ตัวบน', bon3.toLocaleString()],
+    ['3 ตัวล่าง', lang3.toLocaleString()],
+    ['3 ตัวโต๊ด', toad3.toLocaleString()],
+  ].map(([l,v]) => `<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-val">${v}</div></div>`).join('');
+}
+
+// Payout rates and breakeven calculation
+const PAYOUT_RATES = {
+  '2 ตัว — บน': 70, '2 ตัว — ล่าง': 70,
+  '3 ตัว — บน': 500, '3 ตัว — ล่าง': 100, '3 ตัว — โต๊ด': 125
+};
+const KEEP_PCT = 0.72;
+
+function getBreakevenPct(title, maxRecv) {
+  const rate = PAYOUT_RATES[title];
+  if (!rate || !maxRecv) return null;
+  // breakeven amount = (totalRecv * 72%) / rate
+  // But we don't have totalRecv here - we compute per-num below
+  return rate;
+}
+
+function renderRankPanel(title, data, totalFieldRecv) {
+  if (!data.length) return `<div class="rank-panel"><div class="rank-header"><span class="rank-title">${title}</span></div><div class="empty-state">ยังไม่มีข้อมูล</div></div>`;
+  const key = title;
+  const showAll = rankShowMore[key] || false;
+  const visible = showAll ? data : data.slice(0, 10);
+  const maxRecv = Math.max(...data.map(d => d.recv));
+  const hasLayoff = data.some(d => d.layoff > 0);
+  const rate = PAYOUT_RATES[title];
+
+  // Breakeven = (totalFieldRecv * 72%) / rate — total of ALL entries in this category
+  const breakevenAmt = (rate && totalFieldRecv) ? (totalFieldRecv * KEEP_PCT) / rate : null;
+  const breakevenPct = breakevenAmt ? Math.min(100, Math.round(breakevenAmt / maxRecv * 100)) : null;
+
+  const rows = visible.map((d,i) => {
+    const recvBarPct = Math.round(d.recv/maxRecv*100);
+    const netBarPct = Math.max(0, Math.round(d.net/maxRecv*100));
+    const netColor = d.net < 0 ? 'var(--red)' : 'var(--accent)';
+    const layoffHtml = hasLayoff
+      ? `<span style="font-family:var(--mono);font-size:11px;color:var(--red);min-width:64px;text-align:right">${d.layoff ? '-'+d.layoff.toLocaleString() : ''}</span>`
+      : '';
+
+    const breakevenHtml = breakevenPct !== null
+      ? `<div style="position:absolute;top:-2px;left:${breakevenPct}%;width:2px;height:12px;background:#e53935;border-radius:1px;z-index:2" title="จุดคุ้มทุน: ${Math.round(breakevenAmt).toLocaleString()}">
+           <div style="position:absolute;top:-7px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid #e53935;"></div>
+         </div>`
+      : '';
+
+    return `
+    <div class="rank-row">
+      <span class="rank-pos${i<3?' top':''}">${i+1}</span>
+      <span class="rank-num">${d.num}</span>
+      <div class="rank-bar-wrap" style="position:relative;height:8px;top:0">
+        <div style="position:absolute;top:0;left:0;height:8px;border-radius:2px;width:${recvBarPct}%;background:var(--bg3)"></div>
+        <div style="position:absolute;top:0;left:0;height:8px;border-radius:2px;width:${netBarPct}%;background:${netColor};transition:width 0.4s"></div>
+        ${breakevenHtml}
+      </div>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--muted);min-width:64px;text-align:right">${d.recv.toLocaleString()}</span>
+      ${layoffHtml}
+      <span style="font-family:var(--mono);font-size:12px;font-weight:600;color:${netColor};min-width:64px;text-align:right">${d.net.toLocaleString()}</span>
+    </div>`;
+  }).join('');
+
+  const showMoreBtn = data.length > 10 ? `
+    <div style="padding:8px 16px;text-align:center;border-top:1px solid var(--border)">
+      <button onclick="rankShowMore['${key}']=!rankShowMore['${key}'];renderRanking()" 
+        style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:20px;padding:4px 16px;font-size:12px;cursor:pointer;font-family:var(--font)">
+        ${showAll ? '▲ ย่อ' : `▼ ดูทั้งหมด ${data.length} อันดับ`}
+      </button>
+    </div>` : '';
+
+  const headerLabel = hasLayoff
+    ? `<span style="font-size:10px;color:var(--dim);margin-left:auto;font-family:var(--mono)">รับ · ออกตัว · สุทธิ</span>`
+    : `<span style="font-size:10px;color:var(--dim);margin-left:auto;font-family:var(--mono)">รับ · สุทธิ</span>`;
+  return `<div class="rank-panel">
+    <div class="rank-header"><span class="rank-title">${title}</span>${headerLabel}</div>
+    ${rows}
+    ${showMoreBtn}
+  </div>`;
+}
+
+function getToadGroups(n=25) {
+  const groupMap = {};
+  allData.forEach(e => {
+    if (e.num.length !== 3 || !e.toad) return;
+    const key = e.num.split('').sort().join('');
+    if (!groupMap[key]) groupMap[key] = { recv: {}, layoff: {} };
+    if (isLayoff(e.name, e)) {
+      groupMap[key].layoff[e.num] = (groupMap[key].layoff[e.num] || 0) + Math.abs(e.toad);
+    } else {
+      groupMap[key].recv[e.num] = (groupMap[key].recv[e.num] || 0) + e.toad;
+    }
+  });
+
+  return Object.entries(groupMap)
+    .map(([key, g]) => {
+      // merge all nums
+      const allNums = new Set([...Object.keys(g.recv), ...Object.keys(g.layoff)]);
+      const nums = {};
+      allNums.forEach(num => {
+        const r = g.recv[num] || 0;
+        const l = g.layoff[num] || 0;
+        nums[num] = { recv: r, layoff: l, net: r - l };
+      });
+      const totalRecv = Object.values(g.recv).reduce((s,v)=>s+v, 0);
+      const totalLayoff = Object.values(g.layoff).reduce((s,v)=>s+v, 0);
+      const totalNet = totalRecv - totalLayoff;
+      return { key, totalRecv, totalLayoff, totalNet, nums };
+    })
+    .filter(g => g.totalRecv > 0)
+    .sort((a,b) => b.totalNet - a.totalNet)
+    .slice(0, n);
+}
+
+function renderToadGroupPanel() {
+  const groups = getToadGroups(10);
+  if (!groups.length) return `<div class="rank-panel"><div class="rank-header"><span class="rank-title">3 ตัวโต๊ด — กลุ่ม</span></div><div class="empty-state">ยังไม่มีข้อมูล</div></div>`;
+  const maxRecv = Math.max(...groups.map(g => g.totalRecv));
+  const hasLayoff = groups.some(g => g.totalLayoff > 0);
+
+  const rows = groups.map((g, i) => {
+    const netColor = g.totalNet < 0 ? 'var(--red)' : 'var(--accent)';
+    const netBarPct = Math.max(0, Math.round(g.totalNet / maxRecv * 100));
+    const recvBarPct = Math.round(g.totalRecv / maxRecv * 100);
+    const layoffHtml = hasLayoff
+      ? `<span style="font-family:var(--mono);font-size:11px;color:var(--red);min-width:64px;text-align:right">${g.totalLayoff ? '-'+g.totalLayoff.toLocaleString() : ''}</span>`
+      : '';
+
+    // breakdown rows per num
+    const numsHtml = Object.entries(g.nums)
+      .sort((a,b) => b[1].net - a[1].net)
+      .map(([num, v]) => {
+        const nc = v.net < 0 ? 'var(--red)' : 'var(--muted)';
+        return `<div style="display:flex;align-items:center;gap:8px;padding:4px 16px 4px 40px;font-size:12px;border-bottom:1px solid var(--border)">
+          <span style="font-family:var(--mono);min-width:32px">${num}</span>
+          <span style="font-family:var(--mono);color:var(--dim);flex:1;text-align:right">${v.recv.toLocaleString()}</span>
+          ${v.layoff ? `<span style="font-family:var(--mono);color:var(--red);min-width:64px;text-align:right">-${v.layoff.toLocaleString()}</span>` : `<span style="min-width:64px"></span>`}
+          <span style="font-family:var(--mono);color:${nc};min-width:64px;text-align:right;font-weight:500">${v.net.toLocaleString()}</span>
+        </div>`;
+      }).join('');
+
+    return `
+      <div class="rank-row" style="cursor:pointer;flex-direction:column;align-items:stretch;padding:0" onclick="this.querySelector('.toad-detail').style.display=this.querySelector('.toad-detail').style.display==='none'?'block':'none'">
+        <div style="display:flex;align-items:center;gap:12px;padding:9px 16px">
+          <span class="rank-pos${i<3?' top':''}">${i+1}</span>
+          <span class="rank-num">${g.key}</span>
+          <div class="rank-bar-wrap" style="position:relative;height:8px">
+            <div style="position:absolute;top:0;left:0;height:8px;border-radius:2px;width:${recvBarPct}%;background:var(--bg3)"></div>
+            <div style="position:absolute;top:0;left:0;height:8px;border-radius:2px;width:${netBarPct}%;background:${netColor};transition:width 0.4s"></div>
+          </div>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--muted);min-width:64px;text-align:right">${g.totalRecv.toLocaleString()}</span>
+          ${layoffHtml}
+          <span style="font-family:var(--mono);font-size:12px;font-weight:600;color:${netColor};min-width:64px;text-align:right">${g.totalNet.toLocaleString()}</span>
+          <span style="font-size:10px;color:var(--dim)">▾</span>
+        </div>
+        <div class="toad-detail" style="display:none;background:var(--bg)">
+          <div style="display:flex;gap:8px;padding:4px 16px 4px 40px;font-size:10px;color:var(--dim);border-bottom:1px solid var(--border)">
+            <span style="min-width:32px">เลข</span>
+            <span style="flex:1;text-align:right">รับ</span>
+            ${hasLayoff ? `<span style="min-width:64px;text-align:right">ออกตัว</span>` : ''}
+            <span style="min-width:64px;text-align:right">สุทธิ</span>
+          </div>
+          ${numsHtml}
+        </div>
+      </div>`;
+  }).join('');
+
+  const headerLabel = hasLayoff
+    ? `<span style="font-size:10px;color:var(--dim);margin-left:auto;font-family:var(--mono)">รับ · ออกตัว · สุทธิ</span>`
+    : `<span style="font-size:10px;color:var(--dim);margin-left:auto;font-family:var(--mono)">รับ · สุทธิ</span>`;
+
+  return `<div class="rank-panel">
+    <div class="rank-header"><span class="rank-title">3 ตัวโต๊ด — กลุ่ม</span>${headerLabel}<span style="font-size:10px;color:var(--dim);margin-left:8px">คลิกเพื่อดู</span></div>
+    ${rows}
+  </div>`;
+}
+
+function getTotalRecv(field, digits) {
+  // Sum ALL entries (not layoff) for this field+digits
+  let total = 0;
+  allData.forEach(e => {
+    if (e.num.length !== digits || !e[field]) return;
+    if (isLayoff(e.name, e)) return;
+    total += e[field];
+  });
+  return total;
+}
+
+function renderRanking() {
+  const panels = [
+    ['2 ตัว — บน', getTopNums('bon',2), getTotalRecv('bon',2)],
+    ['2 ตัว — ล่าง', getTopNums('lang',2), getTotalRecv('lang',2)],
+    ['3 ตัว — บน', getTopNums('bon',3), getTotalRecv('bon',3)],
+    ['3 ตัว — ล่าง', getTopNums('lang',3), getTotalRecv('lang',3)],
+    ['3 ตัว — โต๊ด', getTopNums('toad',3), getTotalRecv('toad',3)],
+  ];
+  const html = panels.map(([t,d,total])=>renderRankPanel(t,d,total)).join('') + renderToadGroupPanel();
+  document.getElementById('rank-panels').innerHTML = html;
+}
+
+function getBaseName(name) {
+  return name.replace(/\d+$/, '').trim();
+}
+
+function sortSlips(slips) {
+  // Special (no trailing number) first, then numeric order
+  return slips.sort((a, b) => {
+    const aNum = a.match(/(\d+)$/);
+    const bNum = b.match(/(\d+)$/);
+    if (!aNum && !bNum) return a.localeCompare(b, 'th');
+    if (!aNum) return -1;
+    if (!bNum) return 1;
+    return parseInt(aNum[1]) - parseInt(bNum[1]);
+  });
+}
+
+function populatePersonSelect() {
+  const sel = document.getElementById('person-select');
+  if (!sel) return;
+  const cur = sel.value;
+  const bases = [...new Set(allData.map(e => getBaseName(e.name)))];
+  const sorted = bases.map(b => {
+    const count = [...new Set(allData.filter(e => getBaseName(e.name)===b).map(e=>e.name))].length;
+    return { name: b, count };
+  }).sort((a,b) => b.count - a.count);
+  sel.innerHTML = '<option value="">— เลือกชื่อ —</option>' +
+    sorted.map(({name:b, count}) => `<option value="${b}" ${b===cur?'selected':''}>${b} (${count} ใบ)</option>`).join('');
+}
+
+function renderSummary() {
+  const sel = document.getElementById('person-select').value;
+  const container = document.getElementById('summary-content');
+  const totalEl = document.getElementById('summary-total');
+
+  if (!sel) {
+    container.innerHTML = '<div class="empty-state">เลือกชื่อด้านบนเพื่อดูรายละเอียด</div>';
+    totalEl.textContent = '';
+    return;
+  }
+
+  // Group by num for this person (all slips combined)
+  const numMap = {};
+  allData.forEach(e => {
+    if (getBaseName(e.name) !== sel) return;
+    if (!numMap[e.num]) numMap[e.num] = { bon:0, lang:0, toad:0 };
+    numMap[e.num].bon += e.bon;
+    numMap[e.num].lang += e.lang;
+    numMap[e.num].toad += e.toad;
+  });
+
+  if (!Object.keys(numMap).length) {
+    container.innerHTML = '<div class="empty-state">ไม่มีข้อมูล</div>';
+    totalEl.textContent = '';
+    return;
+  }
+
+  // Sort based on selected option
+  const sortBy = document.getElementById('summary-sort')?.value || 'num';
+  const nums = Object.keys(numMap).sort((a, b) => {
+    // Always separate 2-digit and 3-digit
+    if (a.length !== b.length) return a.length - b.length;
+    if (sortBy === 'num') return parseInt(a) - parseInt(b);
+    if (sortBy === 'bon') return (numMap[b].bon||0) - (numMap[a].bon||0);
+    if (sortBy === 'lang') return (numMap[b].lang||0) - (numMap[a].lang||0);
+    if (sortBy === 'toad') return (numMap[b].toad||0) - (numMap[a].toad||0);
+    if (sortBy === 'total') {
+      const ta = numMap[a].bon+numMap[a].lang+numMap[a].toad;
+      const tb = numMap[b].bon+numMap[b].lang+numMap[b].toad;
+      return tb - ta;
+    }
+    return parseInt(a) - parseInt(b);
+  });
+
+  const fmt = v => v ? v.toLocaleString() : '-';
+  let grandTotal = 0;
+
+  // Split into sections
+  const nums2 = nums.filter(n => n.length === 2);
+  const nums3 = nums.filter(n => n.length === 3);
+
+  function buildRows(numList) {
+    return numList.map((num, i) => {
+      const r = numMap[num];
+      const total = r.bon + r.lang + r.toad;
+      grandTotal += total;
+      return `<tr>
+        <td class="num-val" style="color:var(--dim);font-size:12px">${i+1}</td>
+        <td class="num-val" style="font-weight:500;font-size:16px">${num}</td>
+        <td class="num-val" style="text-align:right">${r.bon ? fmt(r.bon) : '-'}</td>
+        <td class="num-val" style="text-align:right">${r.lang ? fmt(r.lang) : '-'}</td>
+        <td class="num-val" style="text-align:right">${r.toad ? fmt(r.toad) : '-'}</td>
+        <td class="num-val" style="text-align:right;color:var(--accent);font-weight:500">${fmt(total)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function sectionTotal(numList, field) {
+    return numList.reduce((s,n) => s + (numMap[n][field]||0), 0);
+  }
+
+  const tot2bon = sectionTotal(nums2,'bon'), tot2lang = sectionTotal(nums2,'lang');
+  const tot3bon = sectionTotal(nums3,'bon'), tot3lang = sectionTotal(nums3,'lang'), tot3toad = sectionTotal(nums3,'toad');
+  const tot2 = tot2bon+tot2lang;
+  const tot3 = tot3bon+tot3lang+tot3toad;
+
+  const thead = `<thead><tr>
+    <th>#</th><th>เลข</th>
+    <th style="text-align:right">บน</th>
+    <th style="text-align:right">ล่าง</th>
+    <th style="text-align:right">โต๊ด</th>
+    <th style="text-align:right">รวม</th>
+  </tr></thead>`;
+
+  let html = '';
+
+  if (nums2.length) {
+    html += `<div class="section-label" style="margin-bottom:8px">2 ตัว</div>
+    <table class="person-table" style="margin-bottom:20px">
+      ${thead}<tbody>
+      ${buildRows(nums2)}
+      <tr class="total-row">
+        <td colspan="2"></td>
+        <td class="num-val" style="text-align:right">${fmt(tot2bon)}</td>
+        <td class="num-val" style="text-align:right">${fmt(tot2lang)}</td>
+        <td></td>
+        <td class="num-val" style="text-align:right;color:var(--accent)">${fmt(tot2)}</td>
+      </tr>
+      </tbody>
+    </table>`;
+  }
+
+  if (nums3.length) {
+    html += `<div class="section-label" style="margin-bottom:8px">3 ตัว</div>
+    <table class="person-table" style="margin-bottom:20px">
+      ${thead}<tbody>
+      ${buildRows(nums3)}
+      <tr class="total-row">
+        <td colspan="2"></td>
+        <td class="num-val" style="text-align:right">${fmt(tot3bon)}</td>
+        <td class="num-val" style="text-align:right">${fmt(tot3lang)}</td>
+        <td class="num-val" style="text-align:right">${fmt(tot3toad)}</td>
+        <td class="num-val" style="text-align:right;color:var(--accent)">${fmt(tot3)}</td>
+      </tr>
+      </tbody>
+    </table>`;
+  }
+
+  totalEl.textContent = `รวมทั้งหมด ${grandTotal.toLocaleString()}`;
+  container.innerHTML = html;
+}
+
+function isLayoff(name, entry) {
+  // Check by name OR by negative values
+  if (entry && (entry.bon < 0 || entry.lang < 0 || entry.toad < 0)) return true;
+  if (!name) return false;
+  return name.toString().trim().replace(/\s/g,'').includes('ออกตัว');
+}
+
+function getLayoffMap() {
+  const map = {};
+  allData.forEach(e => {
+    if (!isLayoff(e.name, e)) return;
+    if (!map[e.num]) map[e.num] = { bon:0, lang:0, toad:0 };
+    map[e.num].bon += Math.abs(e.bon);
+    map[e.num].lang += Math.abs(e.lang);
+    map[e.num].toad += Math.abs(e.toad);
+  });
+  return map;
+}
+
+function renderLayoff() {
+  const layoffMap = getLayoffMap();
+  const nums = Object.keys(layoffMap);
+  if (!nums.length) {
+    document.getElementById('layoff-stat-cards').innerHTML = '<div class="empty-state">ไม่มีข้อมูลออกตัว</div>';
+    document.getElementById('layoff-panels').innerHTML = '';
+    return;
+  }
+
+  // Stats
+  const totalBon = nums.reduce((s,n) => s + layoffMap[n].bon, 0);
+  const totalLang = nums.reduce((s,n) => s + layoffMap[n].lang, 0);
+  const totalToad = nums.reduce((s,n) => s + layoffMap[n].toad, 0);
+  const total = totalBon + totalLang + totalToad;
+  document.getElementById('layoff-stat-cards').innerHTML = [
+    ['ออกตัวรวม', total.toLocaleString()],
+    ['2ตัวบน', totalBon ? totalBon.toLocaleString() : '-'],
+    ['2ตัวล่าง', totalLang ? totalLang.toLocaleString() : '-'],
+    ['3ตัวโต๊ด', totalToad ? totalToad.toLocaleString() : '-'],
+  ].map(([l,v]) => `<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-val" style="color:var(--red)">${v}</div></div>`).join('');
+
+  // Panels by type
+  const nums2 = nums.filter(n => n.length === 2);
+  const nums3 = nums.filter(n => n.length === 3);
+
+  function layoffPanel(title, field, numList) {
+    const data = numList
+      .filter(n => layoffMap[n][field] > 0)
+      .map(n => [n, layoffMap[n][field]])
+      .sort((a,b) => b[1]-a[1]);
+    if (!data.length) return '';
+    const max = data[0][1];
+    const rows = data.map(([num,val], i) => `
+      <div class="rank-row">
+        <span class="rank-pos${i<3?' top':''}">${i+1}</span>
+        <span class="rank-num">${num}</span>
+        <div class="rank-bar-wrap"><div class="rank-bar" style="background:var(--red);width:${Math.round(val/max*100)}%"></div></div>
+        <span class="rank-val" style="color:var(--red)">${val.toLocaleString()}</span>
+      </div>`).join('');
+    return `<div class="rank-panel">
+      <div class="rank-header"><span class="rank-title" style="color:var(--red)">${title}</span></div>
+      ${rows}
+    </div>`;
+  }
+
+  document.getElementById('layoff-panels').innerHTML =
+    layoffPanel('2ตัวบน — ออกตัว', 'bon', nums2) +
+    layoffPanel('2ตัวล่าง — ออกตัว', 'lang', nums2) +
+    layoffPanel('3ตัวบน — ออกตัว', 'bon', nums3) +
+    layoffPanel('3ตัวโต๊ด — ออกตัว', 'toad', nums3);
+}
+
+function populatePrintSelect() {
+  const sel = document.getElementById('print-select');
+  if (!sel) return;
+  const cur = sel.value;
+  const bases = [...new Set(allData.map(e => getBaseName(e.name)))];
+  const basesWithCount = bases.map(b => {
+    const slips = [...new Set(allData.filter(e => getBaseName(e.name)===b).map(e=>e.name))];
+    return { name: b, count: slips.length };
+  }).sort((a,b) => b.count - a.count);
+  sel.innerHTML = '<option value="">— เลือกชื่อ —</option>' + basesWithCount.map(({name:b, count}) =>
+    `<option value="${b}" ${b===cur?'selected':''}>${b} (${count} ใบ)</option>`
+  ).join('');
+}
+
+function buildSlipData(baseName) {
+  // per slip: { name, sheet, bon2, lang2, bon3, lang3, toad3, total }
+  const slipMap = {};
+  allData.forEach(e => {
+    if (getBaseName(e.name) !== baseName) return;
+    if (!slipMap[e.name]) slipMap[e.name] = { name: e.name, sheet: e.sheet, bon2:0, lang2:0, bon3:0, lang3:0, toad3:0, total:0 };
+    const r = slipMap[e.name];
+    if (e.num.length===2) { r.bon2+=e.bon; r.lang2+=e.lang; }
+    if (e.num.length===3) { r.bon3+=e.bon; r.lang3+=e.lang; r.toad3+=e.toad; }
+    r.total += e.bon+e.lang+e.toad;
+  });
+  return sortSlips(Object.keys(slipMap)).map(k => slipMap[k]);
+}
+
+function getWinningForSlip(slipName) {
+  // Get winning amounts for this slip from winner inputs
+  const p2b = document.getElementById('w2b')?.value.trim();
+  const p2l = document.getElementById('w2l')?.value.trim();
+  const p3b = document.getElementById('w3b')?.value.trim();
+  const p3ls = ['w3l1','w3l2','w3l3','w3l4'].map(id=>document.getElementById(id)?.value.trim()).filter(v=>v&&v.length===3);
+  const p3lSet = new Set(p3ls);
+  const perms = p3b ? new Set(permutations(p3b)) : new Set();
+
+  let win2b=0, win2l=0, win3b=0, win3l=0, win3t=0;
+  allData.forEach(e => {
+    if (e.name !== slipName) return;
+    if (p2b && e.num===p2b && e.bon>0) win2b += e.bon;
+    if (p2l && e.num===p2l && e.lang>0) win2l += e.lang;
+    if (p3b && e.num===p3b && e.bon>0) win3b += e.bon;
+    if (p3lSet.size && p3lSet.has(e.num) && e.lang>0) win3l += e.lang;
+    if (perms.size && perms.has(e.num) && e.toad>0) win3t += e.toad;
+  });
+  return { win2b, win2l, win3b, win3l, win3t };
+}
+
+function buildPrintCard(slips, pct, r2b, r2l, r3b, r3t, r3l, half, pageBreak) {
+  const totalAll = slips.reduce((s,r)=>s+r.total,0);
+  const keep = totalAll * ((100 - pct) / 100);
+
+  // sum all winnings
+  let sum2b=0, sum2l=0, sum3b=0, sum3l=0, sum3t=0;
+  slips.forEach(r => {
+    const w = getWinningForSlip(r.name);
+    sum2b+=w.win2b; sum2l+=w.win2l; sum3b+=w.win3b; sum3l+=w.win3l; sum3t+=w.win3t;
+  });
+
+  // Full pay: (total - half) * rate; Half pay: half * (rate/2)
+  const h = half || {};
+  const pay2b = (sum2b - (h.b2||0)) * (r2b||70) + (h.b2||0) * ((r2b||70)/2);
+  const pay2l = (sum2l - (h.l2||0)) * (r2l||70) + (h.l2||0) * ((r2l||70)/2);
+  const pay3b = (sum3b - (h.b3||0)) * r3b + (h.b3||0) * (r3b/2);
+  const pay3t = (sum3t - (h.t3||0)) * r3t + (h.t3||0) * (r3t/2);
+  const pay3l = (sum3l - (h.l3||0)) * r3l + (h.l3||0) * (r3l/2);
+  const totalPay = pay2b + pay2l + pay3b + pay3t + pay3l;
+  const net = keep - totalPay;
+
+  const name = slips[0]?.name ? getBaseName(slips[0].name) : '';
+  const sheetName = {N:'Nampu',E:'Earth',P:'Pooh'};
+  const fmt = v => v ? v.toLocaleString() : '-';
+
+  // Table rows
+  const tableRows = slips.map((r,i) => {
+    const w = getWinningForSlip(r.name);
+    return `<tr>
+      <td>${i+1}</td>
+      <td style="font-weight:500">${r.name}</td>
+      <td style="text-align:right">${r.total.toLocaleString()}</td>
+      <td style="text-align:right;color:#c00">${w.win2b||''}</td>
+      <td style="text-align:right;color:#c00">${w.win2l||''}</td>
+      <td style="text-align:right;color:#c00">${w.win3b||''}</td>
+      <td style="text-align:right;color:#c00">${w.win3l||''}</td>
+      <td style="text-align:right;color:#c00">${w.win3t||''}</td>
+    </tr>`;
+  }).join('');
+
+  const hasWin = sum2b||sum2l||sum3b||sum3l||sum3t;
+
+  return `<div class="print-card" style="${pageBreak?'page-break-before:always':''}">
+    <div style="margin-bottom:8px">
+      <div style="font-size:16px;font-weight:700">${name}</div>
+    </div>
+    <table class="pt">
+      <thead><tr>
+        <th>#</th><th>ใบ</th><th style="text-align:right">ยอด</th>
+        <th style="text-align:right;color:#c00">2บน</th>
+        <th style="text-align:right;color:#c00">2ล่าง</th>
+        <th style="text-align:right;color:#c00">3บน</th>
+        <th style="text-align:right;color:#c00">3ล่าง</th>
+        <th style="text-align:right;color:#c00">3โต๊ด</th>
+      </tr></thead>
+      <tbody>${tableRows}</tbody>
+      <tfoot><tr>
+        <td colspan="2" style="font-weight:600">รวม</td>
+        <td style="text-align:right;font-weight:600">${totalAll.toLocaleString()}</td>
+        <td style="text-align:right;color:#c00;font-weight:600">${sum2b||''}</td>
+        <td style="text-align:right;color:#c00;font-weight:600">${sum2l||''}</td>
+        <td style="text-align:right;color:#c00;font-weight:600">${sum3b||''}</td>
+        <td style="text-align:right;color:#c00;font-weight:600">${sum3l||''}</td>
+        <td style="text-align:right;color:#c00;font-weight:600">${sum3t||''}</td>
+      </tr></tfoot>
+    </table>
+
+    <table class="pt" style="margin-top:10px;width:260px;margin-left:auto">
+      <tr><td>เก็บ ${Math.round(100-pct)}%</td><td style="text-align:right">${totalAll.toLocaleString()}</td><td style="text-align:right">${keep.toLocaleString()}</td></tr>
+      ${sum2b ? (() => {
+        const full2b = sum2b - (h.b2||0);
+        const half2b = h.b2||0;
+        return (full2b ? `<tr><td>2ตัวบน ×${r2b||70}</td><td style="text-align:right">${full2b.toLocaleString()}</td><td style="text-align:right;color:#c00">-${(full2b*(r2b||70)).toLocaleString()}</td></tr>` : '')
+             + (half2b ? `<tr><td>2ตัวบน ×${((r2b||70)/2)}</td><td style="text-align:right">${half2b.toLocaleString()}</td><td style="text-align:right;color:#c00">-${(half2b*((r2b||70)/2)).toLocaleString()}</td></tr>` : '');
+      })() : ''}
+      ${sum2l ? (() => {
+        const full2l = sum2l - (h.l2||0);
+        const half2l = h.l2||0;
+        return (full2l ? `<tr><td>2ตัวล่าง ×${r2l||70}</td><td style="text-align:right">${full2l.toLocaleString()}</td><td style="text-align:right;color:#c00">-${(full2l*(r2l||70)).toLocaleString()}</td></tr>` : '')
+             + (half2l ? `<tr><td>2ตัวล่าง ×${((r2l||70)/2)}</td><td style="text-align:right">${half2l.toLocaleString()}</td><td style="text-align:right;color:#c00">-${(half2l*((r2l||70)/2)).toLocaleString()}</td></tr>` : '');
+      })() : ''}
+      ${sum3b ? (() => {
+        const full3b = sum3b - (h.b3||0);
+        const half3b = h.b3||0;
+        return (full3b ? `<tr><td>3ตัวบน ×${r3b}</td><td style="text-align:right">${full3b.toLocaleString()}</td><td style="text-align:right;color:#c00">-${(full3b*r3b).toLocaleString()}</td></tr>` : '')
+             + (half3b ? `<tr><td>3ตัวบน ×${r3b/2}</td><td style="text-align:right">${half3b.toLocaleString()}</td><td style="text-align:right;color:#c00">-${(half3b*(r3b/2)).toLocaleString()}</td></tr>` : '');
+      })() : ''}
+      ${sum3t ? (() => {
+        const full3t = sum3t - (h.t3||0);
+        const half3t = h.t3||0;
+        return (full3t ? `<tr><td>3ตัวโต๊ด ×${r3t}</td><td style="text-align:right">${full3t.toLocaleString()}</td><td style="text-align:right;color:#c00">-${(full3t*r3t).toLocaleString()}</td></tr>` : '')
+             + (half3t ? `<tr><td>3ตัวโต๊ด ×${r3t/2}</td><td style="text-align:right">${half3t.toLocaleString()}</td><td style="text-align:right;color:#c00">-${(half3t*(r3t/2)).toLocaleString()}</td></tr>` : '');
+      })() : ''}
+      ${sum3l ? (() => {
+        const full3l = sum3l - (h.l3||0);
+        const half3l = h.l3||0;
+        return (full3l ? `<tr><td>3ตัวล่าง ×${r3l}</td><td style="text-align:right">${full3l.toLocaleString()}</td><td style="text-align:right;color:#c00">-${(full3l*r3l).toLocaleString()}</td></tr>` : '')
+             + (half3l ? `<tr><td>3ตัวล่าง ×${r3l/2}</td><td style="text-align:right">${half3l.toLocaleString()}</td><td style="text-align:right;color:#c00">-${(half3l*(r3l/2)).toLocaleString()}</td></tr>` : '');
+      })() : ''}
+      <tr style="font-weight:700;border-top:1px solid #ccc">
+        <td colspan="2" style="font-weight:700;color:${net>=0?'#080':'#c00'}">${net>=0?'เก็บ':'จ่าย'}</td>
+        <td style="text-align:right;font-weight:700;color:${net>=0?'#080':'#c00'}">${Math.abs(net).toLocaleString()}</td>
+      </tr>
+    </table>
+  </div>`;
+}
+
+function renderPrintPage() {
+  populatePrintSelect();
+  const sel = document.getElementById('print-select')?.value;
+  const rate = sel ? getCustomerRate(sel) : { pct:28, r2b:70, r2l:70, r3b:500, r3l:120, r3t:100 };
+  const pct = rate.pct;
+  const r2b = rate.r2b;
+  const r2l = rate.r2l;
+  const r3b = rate.r3b;
+  const r3t = rate.r3t;
+  const r3l = rate.r3l;
+  // Update input fields to reflect loaded rates
+  if (document.getElementById('print-pct')) document.getElementById('print-pct').value = pct;
+  if (document.getElementById('rate-3b')) document.getElementById('rate-3b').value = r3b;
+  if (document.getElementById('rate-3t')) document.getElementById('rate-3t').value = r3t;
+  if (document.getElementById('rate-3l')) document.getElementById('rate-3l').value = r3l;
+  const container = document.getElementById('print-content');
+  if (!container) return;
+
+  if (!sel) {
+    container.innerHTML = '<div class="empty-state">เลือกชื่อด้านบนเพื่อดูตัวอย่างก่อนปริ้น</div>';
+    return;
+  }
+
+  const slips = buildSlipData(sel);
+  if (!slips.length) { container.innerHTML = '<div class="empty-state">ไม่มีข้อมูล</div>'; return; }
+
+  const half = {
+    b2: parseFloat(document.getElementById('half-2b')?.value) || 0,
+    l2: parseFloat(document.getElementById('half-2l')?.value) || 0,
+    b3: parseFloat(document.getElementById('half-3b')?.value) || 0,
+    l3: parseFloat(document.getElementById('half-3l')?.value) || 0,
+    t3: parseFloat(document.getElementById('half-3t')?.value) || 0,
+  };
+  container.innerHTML = buildPrintCard(slips, pct, r2b, r2l, r3b, r3t, r3l, half, false);
+}
+
+function calcPersonResult(baseName) {
+  // Get rates for this person
+  const rate = getCustomerRate(baseName);
+  const pct = rate.pct;
+  const r2b = rate.r2b || 70;
+  const r2l = rate.r2l || 70;
+  const r3b = rate.r3b || 500;
+  const r3t = rate.r3t || 125;
+  const r3l = rate.r3l || 120;
+
+  // Sum all slips for this person
+  let total = 0, bon2=0, lang2=0, bon3=0, lang3=0, toad3=0;
+  allData.forEach(e => {
+    if (getBaseName(e.name) !== baseName) return;
+    if (isLayoff(e.name, e)) return;
+    total += e.bon + e.lang + e.toad;
+    if (e.num.length===2) { bon2+=e.bon; lang2+=e.lang; }
+    if (e.num.length===3) { bon3+=e.bon; lang3+=e.lang; toad3+=e.toad; }
+  });
+
+  // Keep = total * (1 - pct/100)
+  const keep = total * ((100 - pct) / 100);
+
+  // Get winning amounts from ใครถูก inputs
+  const p2b = document.getElementById('w2b')?.value.trim();
+  const p2l = document.getElementById('w2l')?.value.trim();
+  const p3b = document.getElementById('w3b')?.value.trim();
+  const p3ls = ['w3l1','w3l2','w3l3','w3l4'].map(id => document.getElementById(id)?.value.trim()).filter(v=>v&&v.length===3);
+  const p3lSet = new Set(p3ls);
+  const perms = p3b ? new Set(permutations(p3b)) : new Set();
+
+  let win2b=0, win2l=0, win3b=0, win3l=0, win3t=0;
+  allData.forEach(e => {
+    if (getBaseName(e.name) !== baseName) return;
+    if (isLayoff(e.name, e)) return;
+    if (p2b && e.num===p2b && e.bon>0) win2b+=e.bon;
+    if (p2l && e.num===p2l && e.lang>0) win2l+=e.lang;
+    if (p3b && e.num===p3b && e.bon>0) win3b+=e.bon;
+    if (p3lSet.size && p3lSet.has(e.num) && e.lang>0) win3l+=e.lang;
+    if (perms.size && perms.has(e.num) && e.toad>0) win3t+=e.toad;
+  });
+
+  // Get half-pay from print page (only if this person is selected)
+  const printSel = document.getElementById('print-select')?.value;
+  let h = {b2:0, l2:0, b3:0, l3:0, t3:0};
+  if (printSel === baseName) {
+    h.b2 = parseFloat(document.getElementById('half-2b')?.value) || 0;
+    h.l2 = parseFloat(document.getElementById('half-2l')?.value) || 0;
+    h.b3 = parseFloat(document.getElementById('half-3b')?.value) || 0;
+    h.l3 = parseFloat(document.getElementById('half-3l')?.value) || 0;
+    h.t3 = parseFloat(document.getElementById('half-3t')?.value) || 0;
+  }
+
+  // Calculate pay
+  const pay2b = (win2b-(h.b2||0))*(r2b) + (h.b2||0)*(r2b/2);
+  const pay2l = (win2l-(h.l2||0))*(r2l) + (h.l2||0)*(r2l/2);
+  const pay3b = (win3b-(h.b3||0))*(r3b) + (h.b3||0)*(r3b/2);
+  const pay3t = (win3t-(h.t3||0))*(r3t) + (h.t3||0)*(r3t/2);
+  const pay3l = (win3l-(h.l3||0))*(r3l) + (h.l3||0)*(r3l/2);
+  const totalPay = pay2b + pay2l + pay3b + pay3t + pay3l;
+  const net = keep - totalPay;
+
+  return { name: baseName, total, keep, totalPay, net, rate };
+}
+
+function renderResultPage() {
+  const bases = [...new Set(allData.filter(e => !isLayoff(e.name,e)).map(e => getBaseName(e.name)))];
+  if (!bases.length) {
+    document.getElementById('result-stat-cards').innerHTML = '<div class="empty-state">ยังไม่มีข้อมูล</div>';
+    document.getElementById('result-grid').innerHTML = '';
+    return;
+  }
+
+  const results = bases.map(b => calcPersonResult(b)).filter(r => r.total > 0);
+  const collectors = results.filter(r => r.net >= 0).sort((a,b) => b.net - a.net);
+  const payers = results.filter(r => r.net < 0).sort((a,b) => a.net - b.net);
+
+  const totalKeep = collectors.reduce((s,r) => s+r.net, 0);
+  const totalPay = payers.reduce((s,r) => s+Math.abs(r.net), 0);
+  const grandNet = totalKeep - totalPay;
+
+  // Stat cards
+  document.getElementById('result-stat-cards').innerHTML = [
+    ['รวมเก็บ', totalKeep.toLocaleString()],
+    ['รวมจ่าย', totalPay.toLocaleString()],
+    ['สุทธิ', grandNet.toLocaleString()],
+    ['จำนวนคน', results.length],
+  ].map(([l,v],i) => `<div class="stat-card">
+    <div class="stat-label">${l}</div>
+    <div class="stat-val" style="color:${i===0?'var(--accent2)':i===1?'var(--red)':i===2?(grandNet>=0?'var(--accent2)':'var(--red)'):'var(--text)'}">${v}</div>
+  </div>`).join('');
+
+  const fmt = v => Math.abs(v).toLocaleString();
+  const sheetBadge = name => {
+    const e = allData.find(e => getBaseName(e.name)===name);
+    if (!e) return '';
+    return `<span class="badge badge-${e.sheet}" style="font-size:10px">${e.sheet==='N'?'Nampu':e.sheet==='E'?'Earth':'Pooh'}</span>`;
+  };
+
+  function buildSideTable(list, isCollect) {
+    if (!list.length) return `<div class="empty-state">${isCollect?'ไม่มียอดเก็บ':'ไม่มียอดจ่าย'}</div>`;
+    const color = isCollect ? 'var(--accent2)' : 'var(--red)';
+    const label = isCollect ? 'เก็บ' : 'จ่าย';
+    const total = list.reduce((s,r) => s+Math.abs(r.net), 0);
+    return `<table class="person-table">
+      <thead><tr>
+        <th>#</th><th>ชื่อ</th>
+        <th style="text-align:right">${label}</th>
+      </tr></thead>
+      <tbody>
+        ${list.map((r,i) => `<tr>
+          <td style="color:var(--dim);font-size:12px">${i+1}</td>
+          <td style="font-weight:500">${r.name}</td>
+          <td class="num-val" style="text-align:right;color:${color};font-weight:600">${fmt(r.net)}</td>
+        </tr>`).join('')}
+        <tr class="total-row">
+          <td colspan="2"></td>
+          <td class="num-val" style="text-align:right;color:${color}">${total.toLocaleString()}</td>
+        </tr>
+      </tbody>
+    </table>`;
+  }
+
+  document.getElementById('result-grid').innerHTML = `
+    <div>
+      <div class="section-label" style="margin-bottom:12px;color:var(--accent2)">🟢 เก็บ (${collectors.length} คน)</div>
+      ${buildSideTable(collectors, true)}
+    </div>
+    <div>
+      <div class="section-label" style="margin-bottom:12px;color:var(--red)">🔴 จ่าย (${payers.length} คน)</div>
+      ${buildSideTable(payers, false)}
+    </div>`;
+}
+
+function permutations(str) {
+  if (str.length <= 1) return [str];
+  const result = new Set();
+  for (let i = 0; i < str.length; i++) {
+    const rest = str.slice(0,i) + str.slice(i+1);
+    permutations(rest).forEach(p => result.add(str[i] + p));
+  }
+  return [...result];
+}
+
+function winSection(title, hits, cols) {
+  let html = `<div class="winner-section">
+    <div class="winner-title">${title} <span class="winner-count">${hits.length} ใบ</span></div>`;
+  if (!hits.length) return html + '<div class="empty-state" style="margin-bottom:16px">ไม่มีใครส่งเลขนี้</div></div>';
+  const sheetName = {N:'Nampu',E:'Earth',P:'Pooh'};
+  html += `<table class="winner-table"><thead><tr>`;
+  cols.forEach(c => html += `<th${c.r?' style="text-align:right"':''}>${c.label}</th>`);
+  html += `</tr></thead><tbody>`;
+  hits.forEach(e => {
+    html += `<tr>`;
+    cols.forEach(c => {
+      if (c.key==='name') html += `<td style="font-weight:500">${e.name}</td>`;
+      else if (c.key==='sheet') html += `<td><span class="badge badge-${e.sheet}">${sheetName[e.sheet]}</span></td>`;
+      else if (c.key==='num') html += `<td class="num-val" style="color:var(--accent)">${e.num}</td>`;
+      else html += `<td class="num-val" style="text-align:right">${e[c.key]?e[c.key].toLocaleString():'-'}</td>`;
+    });
+    html += `</tr>`;
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function previewToad() {
+  const v = document.getElementById('w3b').value.trim();
+  const el = document.getElementById('toad-preview');
+  if (v.length === 3) {
+    const perms = permutations(v);
+    el.textContent = 'โต๊ด: ' + perms.join(', ');
+  } else {
+    el.textContent = '';
+  }
+}
+
+function findWinners() {
+  const p2b = document.getElementById('w2b').value.trim();
+  const p2l = document.getElementById('w2l').value.trim();
+  const p3b = document.getElementById('w3b').value.trim();
+  const p3ls = ['w3l1','w3l2','w3l3','w3l4'].map(id => document.getElementById(id).value.trim()).filter(v=>v.length===3);
+  let html = '';
+
+  if (p2b) {
+    const hits = allData.filter(e => e.num===p2b && e.bon>0);
+    html += winSection(`2 ตัวบน <span class="win-num">${p2b}</span>`, hits,
+      [{key:'name',label:'ชื่อ'},{key:'sheet',label:'กอง'},{key:'bon',label:'บน',r:true}]);
+  }
+
+  if (p2l) {
+    const hits = allData.filter(e => e.num===p2l && e.lang>0);
+    html += winSection(`2 ตัวล่าง <span class="win-num">${p2l}</span>`, hits,
+      [{key:'name',label:'ชื่อ'},{key:'sheet',label:'กอง'},{key:'lang',label:'ล่าง',r:true}]);
+  }
+
+  if (p3b) {
+    const hits3b = allData.filter(e => e.num===p3b && e.bon>0);
+    html += winSection(`3 ตัวบน <span class="win-num">${p3b}</span>`, hits3b,
+      [{key:'name',label:'ชื่อ'},{key:'sheet',label:'กอง'},{key:'bon',label:'บน',r:true}]);
+
+    const perms = new Set(permutations(p3b));
+    const allToad = allData.filter(e => e.num.length===3 && e.toad>0 && perms.has(e.num));
+    const permList = [...perms].join(', ');
+    html += winSection(`3 ตัวโต๊ด <span class="win-num" style="font-size:12px">${permList}</span>`, allToad,
+      [{key:'num',label:'เลข'},{key:'name',label:'ชื่อ'},{key:'sheet',label:'กอง'},{key:'toad',label:'โต๊ด',r:true}]);
+  }
+
+  if (p3ls.length > 0) {
+    const p3lSet = new Set(p3ls);
+    const hits3l = allData.filter(e => e.num.length===3 && e.lang>0 && p3lSet.has(e.num));
+    const label = p3ls.join(', ');
+    html += winSection(`3 ตัวล่าง <span class="win-num" style="font-size:12px">${label}</span>`, hits3l,
+      [{key:'num',label:'เลข'},{key:'name',label:'ชื่อ'},{key:'sheet',label:'กอง'},{key:'lang',label:'ล่าง',r:true}]);
+  }
+
+  document.getElementById('winner-out').innerHTML = html || '<div class="empty-state">ใส่เลขที่ออกด้านบน</div>';
+}
+</script>
+</body>
+</html>
