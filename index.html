@@ -167,6 +167,7 @@ table.pt tfoot td { background:#f5f5f5; }
   <div class="tab" onclick="showPage('winner')">ใครถูก</div>
   <div class="tab" onclick="showPage('print')">ปริ้น</div>
   <div class="tab" onclick="showPage('result')">สรุปผล</div>
+  <div class="tab" onclick="showPage('heatmap')">กราฟ</div>
   <div class="tab" onclick="showPage('setup')">วิธีตั้งค่า</div>
 </div>
 
@@ -199,27 +200,27 @@ table.pt tfoot td { background:#f5f5f5; }
       <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end">
         <div class="form-group">
           <div class="form-label">2 ตัวบน</div>
-          <input class="form-input" id="w2b" maxlength="2" placeholder="86" />
+          <input class="form-input" id="w2b" maxlength="2" placeholder="86" oninput="saveWinnerInputs()" />
         </div>
         <div class="form-group">
           <div class="form-label">2 ตัวล่าง</div>
-          <input class="form-input" id="w2l" maxlength="2" placeholder="39" />
+          <input class="form-input" id="w2l" maxlength="2" placeholder="39" oninput="saveWinnerInputs()" />
         </div>
       </div>
       <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end">
         <div class="form-group">
           <div class="form-label">3 ตัวบน <span style="color:var(--dim);font-size:10px;margin-left:4px">→ โต๊ดอัตโนมัติ</span></div>
-          <input class="form-input" id="w3b" maxlength="3" placeholder="725" oninput="previewToad()" />
+          <input class="form-input" id="w3b" maxlength="3" placeholder="725" oninput="previewToad();saveWinnerInputs()" />
         </div>
         <div style="align-self:flex-end;padding-bottom:8px;font-family:var(--mono);font-size:11px;color:var(--muted);min-width:200px" id="toad-preview"></div>
       </div>
       <div class="form-group">
         <div class="form-label">3 ตัวล่าง <span style="color:var(--dim);font-size:10px;margin-left:4px">(4 เลข)</span></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <input class="form-input" id="w3l1" maxlength="3" placeholder="162" />
-          <input class="form-input" id="w3l2" maxlength="3" placeholder="261" />
-          <input class="form-input" id="w3l3" maxlength="3" placeholder="612" />
-          <input class="form-input" id="w3l4" maxlength="3" placeholder="621" />
+          <input class="form-input" id="w3l1" maxlength="3" oninput="saveWinnerInputs()" placeholder="162" />
+          <input class="form-input" id="w3l2" maxlength="3" oninput="saveWinnerInputs()" placeholder="261" />
+          <input class="form-input" id="w3l3" maxlength="3" oninput="saveWinnerInputs()" placeholder="612" />
+          <input class="form-input" id="w3l4" maxlength="3" oninput="saveWinnerInputs()" placeholder="621" />
         </div>
       </div>
       <button class="btn btn-accent" onclick="findWinners()">ค้นหา</button>
@@ -278,6 +279,21 @@ table.pt tfoot td { background:#f5f5f5; }
   <div class="page" id="page-result">
     <div class="stat-grid" id="result-stat-cards" style="margin-bottom:24px"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" id="result-grid"></div>
+  </div>
+
+  <div class="page" id="page-heatmap">
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap">
+      <select id="heatmap-type" onchange="renderHeatmap()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-family:var(--font);font-size:13px">
+        <option value="net2">2 ตัว — สุทธิ</option>
+        <option value="bon2">2 ตัว — บน</option>
+        <option value="lang2">2 ตัว — ล่าง</option>
+        <option value="net3">3 ตัว — สุทธิ</option>
+        <option value="bon3">3 ตัว — บน</option>
+        <option value="toad3">3 ตัว — โต๊ด</option>
+      </select>
+      <div id="heatmap-legend" style="font-size:12px;color:var(--muted)"></div>
+    </div>
+    <div id="heatmap-container"></div>
   </div>
 
   <div class="page" id="page-setup">
@@ -486,10 +502,15 @@ function renderRankPanel(title, data, totalFieldRecv) {
          </div>`
       : '';
 
+    const DANGER_THRESH = {'2 ตัว — บน':30000,'2 ตัว — ล่าง':30000,'3 ตัว — บน':2000,'3 ตัว — โต๊ด':10000};
+    const thresh = DANGER_THRESH[title];
+    const danger = thresh && d.net > thresh;
     return `
-    <div class="rank-row">
+    <div class="rank-row" style="${danger?'background:rgba(220,50,50,0.07);border-left:3px solid #e53935;':''}">
       <span class="rank-pos${i<3?' top':''}">${i+1}</span>
-      <span class="rank-num">${d.num}</span>
+      <span class="rank-num" style="${danger?'color:#e53935;font-weight:700;':''}">
+        ${d.num}${danger?' ⚠':''}
+      </span>
       <div class="rank-bar-wrap" style="position:relative;height:8px;top:0">
         <div style="position:absolute;top:0;left:0;height:8px;border-radius:2px;width:${recvBarPct}%;background:var(--bg3)"></div>
         <div style="position:absolute;top:0;left:0;height:8px;border-radius:2px;width:${netBarPct}%;background:${netColor};transition:width 0.4s"></div>
@@ -1184,6 +1205,159 @@ function renderResultPage() {
       <div class="section-label" style="margin-bottom:12px;color:var(--red)">🔴 จ่าย (${payers.length} คน)</div>
       ${buildSideTable(payers, false)}
     </div>`;
+}
+
+// ===== SAVE/LOAD WINNER INPUTS =====
+function saveWinnerInputs() {
+  try {
+    const data = {
+      w2b: document.getElementById('w2b')?.value || '',
+      w2l: document.getElementById('w2l')?.value || '',
+      w3b: document.getElementById('w3b')?.value || '',
+      w3l1: document.getElementById('w3l1')?.value || '',
+      w3l2: document.getElementById('w3l2')?.value || '',
+      w3l3: document.getElementById('w3l3')?.value || '',
+      w3l4: document.getElementById('w3l4')?.value || '',
+    };
+    localStorage.setItem('hengheng_winner', JSON.stringify(data));
+  } catch(e) {}
+}
+
+function loadWinnerInputs() {
+  try {
+    const saved = localStorage.getItem('hengheng_winner');
+    if (!saved) return;
+    const data = JSON.parse(saved);
+    ['w2b','w2l','w3b','w3l1','w3l2','w3l3','w3l4'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && data[id]) el.value = data[id];
+    });
+    previewToad();
+  } catch(e) {}
+}
+
+// ===== DANGER HIGHLIGHT =====
+function isDanger(recv, title) {
+  const rate = PAYOUT_RATES[title];
+  if (!rate) return false;
+  const field = title.includes('บน') ? 'bon' : title.includes('ล่าง') ? 'lang' : 'toad';
+  const digits = title.includes('2') ? 2 : 3;
+  const totalFieldRecv = getTotalRecv(field, digits);
+  const breakeven = (totalFieldRecv * KEEP_PCT) / rate;
+  return recv > breakeven;
+}
+
+// ===== HEATMAP =====
+function renderHeatmap() {
+  const type = document.getElementById('heatmap-type')?.value || 'net2';
+  const container = document.getElementById('heatmap-container');
+  const is2 = type.endsWith('2');
+  const digits = is2 ? 2 : 3;
+  const field = type.startsWith('bon') ? 'bon' : type.startsWith('lang') ? 'lang' : type.startsWith('toad') ? 'toad' : null;
+
+  // Build value map
+  const recv = {}, layoff = {};
+  allData.forEach(e => {
+    if (e.num.length !== digits) return;
+    const f = field || 'bon'; // for net, use bon as base then recalc
+    if (isLayoff(e.name, e)) {
+      layoff[e.num] = (layoff[e.num]||0) + Math.abs(e.bon + e.lang + e.toad);
+    } else {
+      const val = field ? e[field] : (e.bon + e.lang + e.toad);
+      if (val) recv[e.num] = (recv[e.num]||0) + val;
+    }
+  });
+
+  const valMap = {};
+  if (type.startsWith('net')) {
+    // net = recv - layoff per num
+    const rMap = {}, lMap = {};
+    allData.forEach(e => {
+      if (e.num.length !== digits) return;
+      const val = e.bon + e.lang + e.toad;
+      if (isLayoff(e.name, e)) lMap[e.num] = (lMap[e.num]||0) + Math.abs(val);
+      else rMap[e.num] = (rMap[e.num]||0) + val;
+    });
+    [...new Set([...Object.keys(rMap),...Object.keys(lMap)])].forEach(n => {
+      valMap[n] = (rMap[n]||0) - (lMap[n]||0);
+    });
+  } else {
+    Object.assign(valMap, recv);
+  }
+
+  const vals = Object.values(valMap).filter(v => v > 0);
+  const maxVal = vals.length ? Math.max(...vals) : 1;
+  const minVal = 0;
+
+  function getColor(val) {
+    if (!val || val <= 0) return 'var(--bg3)';
+    const pct = val / maxVal;
+    // red gradient: light pink to deep red
+    const r = Math.round(255 - pct * 50);
+    const g = Math.round(235 - pct * 200);
+    const b = Math.round(235 - pct * 220);
+    return `rgb(${r},${g},${b})`;
+  }
+
+  if (is2) {
+    // 10x10 grid for 00-99
+    let html = '<div style="display:inline-block">';
+    // Column headers 0-9
+    html += '<div style="display:flex;margin-bottom:4px;margin-left:28px">';
+    for (let c=0; c<10; c++) html += `<div style="width:44px;text-align:center;font-size:11px;color:var(--muted);font-family:var(--mono)">${c}</div>`;
+    html += '</div>';
+
+    for (let r=0; r<10; r++) {
+      html += '<div style="display:flex;align-items:center;margin-bottom:3px">';
+      html += `<div style="width:24px;font-size:11px;color:var(--muted);font-family:var(--mono);text-align:right;margin-right:4px">${r}</div>`;
+      for (let c=0; c<10; c++) {
+        const num = String(r*10+c).padStart(2,'0');
+        const val = valMap[num] || 0;
+        const bg = getColor(val);
+        const textColor = val > maxVal*0.6 ? '#fff' : 'var(--text)';
+        const title = val ? `${num}: ${val.toLocaleString()}` : num;
+        html += `<div style="width:44px;height:36px;background:${bg};border-radius:4px;margin:1px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:default;font-family:var(--mono)" title="${title}">
+          <div style="font-size:11px;font-weight:600;color:${textColor}">${num}</div>
+          ${val ? `<div style="font-size:9px;color:${textColor};opacity:0.8">${val>999?(val/1000).toFixed(1)+'k':val}</div>` : ''}
+        </div>`;
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+
+    // Legend
+    document.getElementById('heatmap-legend').innerHTML = `สูงสุด: ${maxVal.toLocaleString()} · ${Object.keys(valMap).length} เลข`;
+    container.innerHTML = html;
+  } else {
+    // 3-digit: 10 groups (first digit 0-9), each group is 10x10 grid
+    let html = '<div style="display:flex;flex-wrap:wrap;gap:16px">';
+    for (let first = 0; first < 10; first++) {
+      html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px">`;
+      html += `<div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:6px;text-align:center">${first}XX</div>`;
+      // col headers
+      html += '<div style="display:flex;margin-bottom:2px;margin-left:20px">';
+      for (let c=0; c<10; c++) html += `<div style="width:26px;text-align:center;font-size:9px;color:var(--dim);font-family:var(--mono)">${c}</div>`;
+      html += '</div>';
+      for (let r=0; r<10; r++) {
+        html += '<div style="display:flex;align-items:center;margin-bottom:1px">';
+        html += `<div style="width:18px;font-size:9px;color:var(--dim);font-family:var(--mono);text-align:right;margin-right:2px">${r}</div>`;
+        for (let c=0; c<10; c++) {
+          const num = String(first*100 + r*10 + c).padStart(3,'0');
+          const val = valMap[num] || 0;
+          const bg = getColor(val);
+          const textColor = val > maxVal*0.5 ? '#fff' : 'var(--text)';
+          html += `<div style="width:26px;height:22px;background:${bg};border-radius:3px;margin:1px;display:flex;align-items:center;justify-content:center;cursor:default" title="${num}: ${val?val.toLocaleString():'0'}">
+            <span style="font-size:8px;font-family:var(--mono);color:${textColor}">${val>999?(val/1000).toFixed(0)+'k':val||''}</span>
+          </div>`;
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+    document.getElementById('heatmap-legend').innerHTML = `${Object.keys(valMap).length} เลข · สูงสุด: ${maxVal.toLocaleString()}`;
+    container.innerHTML = html;
+  }
 }
 
 function permutations(str) {
