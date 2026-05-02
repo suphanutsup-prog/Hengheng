@@ -115,23 +115,19 @@ header { border-bottom: 1px solid var(--border); padding: 16px 24px; display: fl
 .page.active { display: block; }
 
 /* ===== PRINT STYLES ===== */
-.print-card { background:#fff; color:#000; padding:16px; margin-bottom:24px; border:1px solid #ddd; border-radius:6px; font-family:'IBM Plex Sans Thai',sans-serif; font-size:12px; }
-table.pt { width:100%; border-collapse:collapse; font-size:12px; }
-table.pt th, table.pt td { border:1px solid #ccc; padding:4px 6px; }
-table.pt tfoot td { background:#f5f5f5; }
+.print-card { background:#fff; color:#000; padding:16px; margin-bottom:24px; border:1px solid #ddd; border-radius:6px; font-family:'Sarabun','IBM Plex Sans Thai',sans-serif; font-size:15px; }
+table.pt { width:100%; border-collapse:collapse; font-size:15px; font-family:'Sarabun','IBM Plex Sans Thai',sans-serif; }
+table.pt th { background:#e8f5e8; border-top:2.5px solid #3a8a4a; border-bottom:2.5px solid #3a8a4a; border-left:1.5px solid #999; border-right:1.5px solid #999; padding:8px 12px; font-weight:700; }
+table.pt td { border-left:1.5px solid #bbb; border-right:1.5px solid #bbb; border-bottom:0.5px solid #ddd; padding:6px 12px; }
+table.pt tr:nth-child(even) td { background:#f6fbf6; }
+table.pt tfoot td { background:#e8f5e8; border-top:2px solid #3a8a4a; font-weight:700; }
 @media print {
   header, .status-bar, .tabs, #page-print > div:first-child, #half-pay-controls { display:none !important; }
-  .page { display:block !important; }
-  #page-ranking, #page-summary, #page-winner, #page-layoff, #page-entry, #page-setup { display:none !important; }
-  .print-card { border:none; margin:0; padding:8px; font-size:14px; }
-  .print-card table.pt { font-size:14px; }
-  .print-card table.pt th, .print-card table.pt td { padding:6px 10px; }
-  .print-card > div { font-size:18px; margin-bottom:10px; }
-  body { background:#fff; font-family: 'Sarabun', 'IBM Plex Sans Thai', sans-serif; }
+  .page { display:none !important; }
+  #page-print { display:block !important; }
+  .print-card { border:none; margin:0 auto; padding:12px; font-size:14px; font-family:'Sarabun','IBM Plex Sans Thai',sans-serif; }
+  body { background:#fff; font-family:'Sarabun','IBM Plex Sans Thai',sans-serif; }
 }
-.print-card { font-family: 'IBM Plex Sans Thai', sans-serif; }
-.print-card table.pt { font-size:13px; }
-.print-card table.pt th, .print-card table.pt td { padding:5px 8px; }
 </style>
 </head>
 <body>
