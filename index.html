@@ -505,20 +505,38 @@ function renderRankPanel(title, data, totalFieldRecv) {
     const DANGER_THRESH = {'2 ตัว — บน':30000,'2 ตัว — ล่าง':30000,'3 ตัว — บน':2000,'3 ตัว — โต๊ด':10000};
     const thresh = DANGER_THRESH[title];
     const danger = thresh && d.net > thresh;
-    return `
-    <div class="rank-row" style="${danger?'background:rgba(220,50,50,0.07);border-left:3px solid #e53935;':''}">
-      <span class="rank-pos${i<3?' top':''}">${i+1}</span>
-      <span class="rank-num" style="${danger?'color:#e53935;font-weight:700;':''}">
-        ${d.num}${danger?' ⚠':''}
-      </span>
-      <div class="rank-bar-wrap" style="position:relative;height:8px;top:0">
-        <div style="position:absolute;top:0;left:0;height:8px;border-radius:2px;width:${recvBarPct}%;background:var(--bg3)"></div>
-        <div style="position:absolute;top:0;left:0;height:8px;border-radius:2px;width:${netBarPct}%;background:${netColor};transition:width 0.4s"></div>
-        ${breakevenHtml}
+
+    // Buyer breakdown
+    const fld = title.includes('บน') ? 'bon' : title.includes('ล่าง') ? 'lang' : 'toad';
+    const buyerMap = {};
+    allData.forEach(e => {
+      if (e.num !== d.num || isLayoff(e.name, e)) return;
+      const v = e[fld]; if (!v) return;
+      const base = getBaseName(e.name);
+      buyerMap[base] = (buyerMap[base]||0) + v;
+    });
+    const buyers = Object.entries(buyerMap).sort((a,b)=>b[1]-a[1]);
+    const buyerRows = buyers.map(([name,val]) =>
+      `<div style="display:flex;justify-content:space-between;padding:2px 12px 2px 32px;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border)">
+        <span>${name}</span><span style="font-family:var(--mono)">${val.toLocaleString()}</span>
+      </div>`).join('');
+    const rid = 'r' + i + title.length + d.num;
+
+    return `<div style="${danger?'background:rgba(220,50,50,0.07);border-left:3px solid #e53935;':''}">
+      <div class="rank-row" style="cursor:pointer" onclick="(function(){var el=document.getElementById('${rid}');el.style.display=el.style.display==='none'?'block':'none';})()">
+        <span class="rank-pos${i<3?' top':''}">${i+1}</span>
+        <span class="rank-num" style="${danger?'color:#e53935;font-weight:700;':''}">${d.num}${danger?' ⚠':''}</span>
+        <div class="rank-bar-wrap" style="position:relative;height:8px;top:0">
+          <div style="position:absolute;top:0;left:0;height:8px;border-radius:2px;width:${recvBarPct}%;background:var(--bg3)"></div>
+          <div style="position:absolute;top:0;left:0;height:8px;border-radius:2px;width:${netBarPct}%;background:${netColor};transition:width 0.4s"></div>
+          ${breakevenHtml}
+        </div>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--muted);min-width:60px;text-align:right">${d.recv.toLocaleString()}</span>
+        ${layoffHtml}
+        <span style="font-family:var(--mono);font-size:12px;font-weight:600;color:${netColor};min-width:60px;text-align:right">${d.net.toLocaleString()}</span>
+        <span style="font-size:9px;color:var(--dim);flex-shrink:0">▾</span>
       </div>
-      <span style="font-family:var(--mono);font-size:11px;color:var(--muted);min-width:64px;text-align:right">${d.recv.toLocaleString()}</span>
-      ${layoffHtml}
-      <span style="font-family:var(--mono);font-size:12px;font-weight:600;color:${netColor};min-width:64px;text-align:right">${d.net.toLocaleString()}</span>
+      <div id="${rid}" style="display:none;background:var(--bg)">${buyerRows}</div>
     </div>`;
   }).join('');
 
