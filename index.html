@@ -413,7 +413,7 @@ function autoRefresh() {
   }
 }
 
-function getTopNums(field, digits, n=25) {
+function getTopNums(field, digits, n=100) {
   const recv = {}, layoff = {};
   allData.forEach(e => {
     if (e.num.length !== digits || !e[field]) return;
@@ -479,7 +479,7 @@ function renderRankPanel(title, data, totalFieldRecv) {
   if (!data.length) return `<div class="rank-panel"><div class="rank-header"><span class="rank-title">${title}</span></div><div class="empty-state">ยังไม่มีข้อมูล</div></div>`;
   const key = title;
   const showAll = rankShowMore[key] || false;
-  const visible = showAll ? data : data.slice(0, 10);
+  const visible = showAll ? data : data.slice(0, 25);
   const maxRecv = Math.max(...data.map(d => d.recv));
   const hasLayoff = data.some(d => d.layoff > 0);
   const rate = PAYOUT_RATES[title];
@@ -540,7 +540,7 @@ function renderRankPanel(title, data, totalFieldRecv) {
   </div>`;
 }
 
-function getToadGroups(n=25) {
+function getToadGroups(n=100) {
   const groupMap = {};
   allData.forEach(e => {
     if (e.num.length !== 3 || !e.toad) return;
