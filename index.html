@@ -404,12 +404,12 @@ async function loadData() {
     [['N', nampuRows], ['E', earthRows], ['P', poohRows]].forEach(([sheet, rows]) => {
       rows.forEach((r, i) => {
         if (i === 0) return;
-        const num  = r[0] ? r[0].toString().trim() : '';
+        const num  = r[0] !== undefined && r[0] !== null ? r[0].toString().trim() : '';
         const bon  = parseFloat(r[1]) || 0;
         const lang = parseFloat(r[2]) || 0;
         const toad = parseFloat(r[3]) || 0;
-        const name = r[4] ? r[4].toString().trim() : '';
-        if (!num || !name) return;
+        const name = r[4] !== undefined && r[4] !== null ? r[4].toString().trim() : '';
+        if (num === '' || !name) return;
         if (bon === 0 && lang === 0 && toad === 0) return;
         allData.push({ sheet, num, bon, lang, toad, name, total: bon + lang + toad });
       });
